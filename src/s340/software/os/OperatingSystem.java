@@ -1,17 +1,14 @@
 package s340.software.os;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
-import s340.hardware.DeviceControllerOperations;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import s340.hardware.MemoryController;
+import s340.hardware.DeviceControllerOperations;
 import s340.hardware.IInterruptHandler;
 import s340.hardware.ISystemCallHandler;
 import s340.hardware.ITrapHandler;
@@ -29,15 +26,16 @@ public class OperatingSystem implements IInterruptHandler, ISystemCallHandler, I
 
     // the machine on which we are running.
     private final Machine machine;
-    private final static int NUMBER = 10;
-    PCB[] Process_Table = new PCB[NUMBER];
-
-    //current process
+    PCB[] Process_Table = new PCB[10];
+    List<PCB> newsort = new ArrayList<PCB>();
+    //current process 
     int currentProcess = 0;
     //List of free spaces
     List<freeSpace> freespace = new ArrayList<>();
     List<Program> program = new LinkedList<>();
+
     Queue<IORequest>[] waitQ = new Queue[Machine.NUM_DEVICES];
+
 
     /*
 	 * Create an operating system on the given machine.
@@ -46,20 +44,21 @@ public class OperatingSystem implements IInterruptHandler, ISystemCallHandler, I
         //List<Program> program = new LinkedList<>();
         this.machine = machine;
 
-        for (int i= 0; i < waitQ.length; i++) {
-	            waitQ[i] = new LinkedList<>();
-	      }
-        //Process_Table = new PCB[10];
+        for (int i = 0; i < waitQ.length; i++) {
+            waitQ[i] = new LinkedList<>();
+        }
+
+        //Process_Table = new PCB[10]; 
         ProgramBuilder wait = new ProgramBuilder();
         wait.size(2);
         wait.jmp(0);
         Program waiter = wait.build();
         program.add(waiter);
 
-        freespace.add(new freeSpace(0, Machine.MEMORY_SIZE));
+        freespace.add(new freeSpace(0, this.machine.MEMORY_SIZE));
+        System.out.println("[Debug] Initial freeSpace size: " + freespace.get(0).size);
         schedule(program);
     }
-
 
     /*
 	 * Load a program into a given memory address
@@ -74,8 +73,8 @@ public class OperatingSystem implements IInterruptHandler, ISystemCallHandler, I
 
     /*
 	 * Scheduled a list of programs to be run.
-	 *
-	 *
+	 * 
+	 * 
 	 * @param programs the programs to schedule
      */
     public synchronized void schedule(List<Program> programs) throws MemoryFault, Exception {   //Creating a process control block
@@ -101,14 +100,8 @@ public class OperatingSystem implements IInterruptHandler, ISystemCallHandler, I
                 }
             }
         }
-        //printing out process tables
-        for (int i = 0; i < Process_Table.length; i++) {
-            //if (Process_Table[i].status==ProcessState.end) {
-            //Process_Table[i].status = ProcessState.end;
-            //System.err.println(i + " " + Process_Table[i].toString());
-            //}
-        }
-        diag();
+
+        // diag();
         // leave this as the last line
         machine.cpu.runProg = true;
     }
@@ -117,7 +110,6 @@ public class OperatingSystem implements IInterruptHandler, ISystemCallHandler, I
         for (freeSpace free : freespace) {
             if (free.size >= size) {
                 return free;
-                //moveLeft();
             }
         }
         return null;
@@ -125,11 +117,11 @@ public class OperatingSystem implements IInterruptHandler, ISystemCallHandler, I
 
     public void expands(List<freeSpace> o, int R) {
         //expanding in place going towards the right
+        System.out.println("[Info] EXPANDING RIGHT INITIATED");
 
         for (freeSpace f : freespace) {
-            //System.err.println(f.size);
             if (f.start == Process_Table[currentProcess].limit + Process_Table[currentProcess].base && f.size >= R) {
-//System.err.println("EXPANDING IN PLACE");
+                System.out.println("[Info] EXPANDING IN PLACE");
                 Process_Table[currentProcess].limit = Process_Table[currentProcess].limit + R;
                 f.start = f.start + R;
                 f.size = f.size - R;
@@ -137,14 +129,12 @@ public class OperatingSystem implements IInterruptHandler, ISystemCallHandler, I
                     freespace.remove(f);
                 }
                 Process_Table[currentProcess].acc = 0;
-               System.err.println("DONE EXPANDING");
-                //System.err.println(Process_Table[currentProcess].toString());
-                //System.err.println(f.toString());
+                System.out.println("[Info] DONE EXPANDING");
                 return;
             }
 
         }
-        //System.err.println("Expanding right was not sucessful");
+        System.out.println("[Warning] Expanding right was not sucessful");
         Process_Table[currentProcess].acc = 1;
     }
 
@@ -182,60 +172,80 @@ public class OperatingSystem implements IInterruptHandler, ISystemCallHandler, I
         Process_Table[currentProcess].acc = 1;
     }
 
-    public int moveRight(List<PCB> newsort, int j, int B) throws MemoryFault {
-        //System.err.println("MOVING EVERYTHING TO THE RIGHT OF CURRENT TO THE RIGHT");
-
-        //loop through the programs to the right of the current process
-        for (int w = 0; w < newsort.get(j).limit; w++) {
-            //get instructions from theprogram
-            int oldData = machine.memory.load(newsort.get(j).base + w);
-            //store at the end of the freespace
-            machine.memory.store(B - newsort.get(j).limit, oldData);//Machine.MEMORY_SIZE - w, oldData);
-            B--;
+    /*
+    * THe goal of this method is to shift any and all programs residing next to currentProcess to the right.
+     */
+    public int moveRight(List<PCB> newsort, int R) throws MemoryFault {
+        System.out.println("[Info] BEGIN moveRight()");
+        machine.memory.setBase(0);
+        machine.memory.setLimit(Machine.MEMORY_SIZE);
+        int index;
+        int j;
+        //find index to current process in the list
+        for (index = 0; index < newsort.size(); index++) {
+            if (newsort.get(index).equals(Process_Table[currentProcess])) {
+                break;
+            }
         }
-        //make the j-th programs base the previous programs base plus the j-th programs limit
+        //loop through the programs to the right of the current process
+        int B = Machine.MEMORY_SIZE - 1;
+        for (j = newsort.size() - 1; j >= index; j--) {
 
-        newsort.get(j).base = B;
+            for (int w = 0; w < newsort.get(j).limit; w++) {
+                //get instructions from theprogram
+                int oldData = machine.memory.load(newsort.get(j).base + w);
+                //store at the end of the freespace
+                machine.memory.store(B, oldData);//Machine.MEMORY_SIZE - w, oldData);
+                B--;
+            }
+            //make the j-th programs base the previous programs base plus the j-th programs limit
 
-        // System.err.println("DONE MOVING RIGHT");
+            newsort.get(j).base = B;
+
+        }
+        System.out.println("[Info] END moveRight()");
         return B;
     }
 
-    public int moveLeft(List<PCB> newsort, int j, int a) throws MemoryFault {
-
-        //loop through the programs that are to the left of current process and current process
-        //load the program at the start
-        for (int w = newsort.get(j).base; w < newsort.get(j).limit + newsort.get(j).base; w++) {
-            //System.err.println(newsort.get(j).base+w);
-            if (j == 0) {
-                //System.err.println("w = "+w);
-            }
-            //System.err.println(newsort.get(j).limit+ newsort.get(j).base);
-            int oldData = machine.memory.load(w);
-            machine.memory.store(a, oldData);
-            a++;
-            if (j == 0) {
-                //System.err.print(a);
+    public int moveLeft(List<PCB> newsort, int R) throws MemoryFault {
+        machine.memory.setBase(0);
+        machine.memory.setLimit(Machine.MEMORY_SIZE);
+        int index = 0;
+        int j = 0;
+        System.out.println("[Info] BEGIN moveLeft()");
+        for (index = 0; index < newsort.size(); index++) {
+            if (newsort.get(index).equals(Process_Table[currentProcess])) {
+                break;
             }
         }
-        //update pcb to reflect new base
-//            if (j != 0) {
-        newsort.get(j).base = a - newsort.get(j).limit;
-//            }
+        int a = 0;
+        //loop through the programs that are to the left of current process and current process
+        for (j = 0; j < index; j++) {
+            //load the program at the start 
+            for (int w = 0; w <= newsort.get(j).limit; w++) {
 
-        //System.err.println("DONE MOVING LEFT");
+                int oldData = machine.memory.load(newsort.get(j).base + w);
+                machine.memory.store(a + w, oldData);
+                a++;
+            }
+            //update pcb to reflect new base 
+            if (j != 0) {
+                newsort.get(j).base = a;
+            }
+        }
+        System.out.println("[Info] END moveLeft()");
         return a;
     }
 
     public void freemerge(List<freeSpace> freespace) {
         Iterator<freeSpace> freeit = freespace.iterator();
         freeSpace prev = freeit.next();
-        //System.err.println("MERGEING FREE SPACES!!");
+        System.out.println("[Info] BEGIN freemerge()");
 
         while (freeit.hasNext()) {
 
             freeSpace current = freeit.next();
-            //System.err.println("Merge's iterator.next().size="+current.size);
+            System.out.println("[Debug] Merge's iterator.next().size=" + current.size);
             //if the end of the last process = the start of the current one
 
             if (prev.start + prev.size == current.start) {
@@ -247,15 +257,16 @@ public class OperatingSystem implements IInterruptHandler, ISystemCallHandler, I
             }
 
         }
-        //System.err.println("MERGE WAS SUCESSFUL!!");
+        System.out.println("[Info] freeMerge() was successful!");
+        diag();
     }
 
     public void sbrk(int R) throws MemoryFault {
-
-//expanding in place going towards the right
+        //expanding in place going towards the right
         expands(freespace, R);
         if (Process_Table[currentProcess].acc == 0) {
-            //System.err.println("EXPANDED RIGHT AND BROKE OUT OF SBRK");
+            System.out.println("[Info] EXPANDED RIGHT AND BROKE OUT OF SBRK");
+            diag();
             return;
         }
 
@@ -264,94 +275,130 @@ public class OperatingSystem implements IInterruptHandler, ISystemCallHandler, I
 
         //merging of freespaces that are next to eachother
         freemerge(freespace);
-        if (Process_Table[currentProcess].acc == 0) {
-            System.err.println("Merge completed");
-            return;
-        }
-        else {
-            System.out.println("[Warning] Merge was not successful");
-        }
         //expanding in place going towards the right
         expands(freespace, R);
         if (Process_Table[currentProcess].acc == 0) {
-            System.err.println("EXPANDED RIGHT AND BROKE OUT OF SBRK");
+            System.out.println("[Info] EXPANDED RIGHT AND BROKE OUT OF SBRK");
+            //diag();
             return;
         }
-
         //moving a program to a freespace w enough room and updating freespace and program
-        // System.err.println("OLD BASE IS:" +Process_Table[currentProcess].base +" OLD LIMIT WAS:" + +Process_Table[currentProcess].limit);
+        //System.out.println("[Debug] OLD BASE IS:" + Process_Table[currentProcess].base + " OLD LIMIT WAS:" + +Process_Table[currentProcess].limit);
         newfree(freespace, R);
         if (Process_Table[currentProcess].acc == 0) {
-            System.err.println("FOUND NEW FREE AND BROKE OUT OF SBRK");
+            System.out.println("[Debug] NEW BASE IS:" + Process_Table[currentProcess].base + " NEW LIMIT IS:" + +Process_Table[currentProcess].limit);
+            System.out.println("[Info] FOUND NEW FREE AND BROKE OUT OF SBRK");
+            diag();
             return;
         }
 
-        List<PCB> newsort = new ArrayList<PCB>();
         //SORTING 0F PCB'S
-        for (int i = 1; i < Process_Table.length; i++) {
-
-            if (Process_Table[i] != null && Process_Table[i].status != ProcessState.end) {
-                System.out.print(i + "Status" + Process_Table[i].status);
+        for (int i = 0; i < Process_Table.length; i++) {
+            if (Process_Table[i] != null) {
                 newsort.add(Process_Table[i]);
             }
         }
         Collections.sort(newsort);
-//--------------MEMORY AND PROGRAM COMPACTION--------------
-        machine.memory.setBase(0);
-        machine.memory.setLimit(Machine.MEMORY_SIZE);
-        int index = 0;
-        int j = 0;
-        int c = 0;
-        int a = 4;
-        int b = Machine.MEMORY_SIZE - 1;;
-        //find index to current process in the list
-        for (index = 0; index < newsort.size(); index++) {
-            if (newsort.get(index).equals(Process_Table[currentProcess])) {
-                break;
-            }
-        }
-        for (c = 0; c <= index; c++) {
 
-            a = moveLeft(newsort, c, a);
+        compaction(R);
 
-        }
-        for (j = newsort.size() - 1; j > index; j--) {
+        // diag();
+    }
 
-            b = moveRight(newsort, j, b);
+    public void compaction(int R) throws MemoryFault {
+        int b = moveRight(this.newsort, R);
 
-        }
-        freespace.removeAll(freespace);
-        //System.err.println("Size: " + freespace.size());
+        int a = moveLeft(this.newsort, R);
+
+        this.freespace.removeAll(this.freespace);
         freeSpace space = new freeSpace(a, b - a);
-        freespace.add(space);
-
-        int old = Process_Table[currentProcess].limit;
+        this.freespace.add(space);
+        int old = this.Process_Table[currentProcess].limit;
         expands(freespace, R);
-        if (old + R == Process_Table[currentProcess].limit) {
-            Process_Table[currentProcess].acc = 0;
-            System.err.println("THE COMPACTION WAS SUCESSFUL");
+        if (old + R == this.Process_Table[currentProcess].limit) {
+            this.Process_Table[currentProcess].acc = 0;
+            System.out.println("[Info] THE COMPACTION WAS SUCESSFUL");
             return;
         } else {
-            Process_Table[currentProcess].acc = 1;
-            System.err.println("THERE WAS NOT ENOUGH SPACE, COMPACTION FAILED");
+            this.Process_Table[currentProcess].acc = 1;
+            System.out.println("[Warning] THERE WAS NOT ENOUGH SPACE, COMPACTION FAILED");
+            return;
         }
-
-//
-
     }
 
-    public void writeConsole (int writeConsole) {
+    public void writeConsole()  {
+        Process_Table[currentProcess].status = ProcessState.waiting;
+       
+        
+       
+      
         if (waitQ[Machine.CONSOLE].isEmpty()) {
+            IORequest r = new IORequest(DeviceControllerOperations.WRITE, currentProcess);
+            waitQ[Machine.CONSOLE].add(r);
             machine.devices[Machine.CONSOLE].controlRegister.register[0] = DeviceControllerOperations.WRITE; // operation
-            machine.devices[Machine.CONSOLE].controlRegister.register[1] = writeConsole; // what we want to write
+            machine.devices[Machine.CONSOLE].controlRegister.register[1] = Process_Table[currentProcess].acc; // what we want to write
             machine.devices[Machine.CONSOLE].controlRegister.latch(); // initiate the latch
-        }
-        else {
-            IORequest r = new IORequest(DeviceControllerOperations.WRITE, writeConsole);
+        } else {
+            IORequest r = new IORequest(DeviceControllerOperations.WRITE, currentProcess);
             waitQ[Machine.CONSOLE].add(r);
         }
-    }
 
+    }
+public void read () throws MemoryFault {
+            Process_Table[currentProcess].status = ProcessState.waiting;
+       int platter = machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc );
+       int platStart = machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc+1);
+       int datasize = machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc +2);
+       int memLoc = machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc+3);
+       int deviceNumber = machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc+4);
+          if (waitQ[deviceNumber].isEmpty()) {
+            IORequest r = new IORequest(DeviceControllerOperations.WRITE, currentProcess);
+            waitQ[deviceNumber].add(r);
+            machine.devices[deviceNumber].controlRegister.register[0] = DeviceControllerOperations.READ;
+            machine.devices[deviceNumber].controlRegister.register[1] = platter;
+            machine.devices[deviceNumber].controlRegister.register[2] = platStart; 
+            machine.devices[deviceNumber].controlRegister.register[3] = datasize;
+            
+            
+           for( int i = 0; i <  datasize; i ++){
+            machine.memory.store(i + memLoc,machine.devices[deviceNumber].buffer[i]);
+           }
+                      
+           
+            machine.devices[deviceNumber].controlRegister.latch(); // initiate the latch
+        } else {
+            IORequest r = new IORequest(DeviceControllerOperations.READ, currentProcess);
+            waitQ[deviceNumber].add(r);
+        }
+}
+
+    public void write () throws MemoryFault{
+        Process_Table[currentProcess].status = ProcessState.waiting;
+         int deviceNumber = machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc);
+       int platter = machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc+1 );
+       int platStart = machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc+2);
+       int datasize = machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc +3);
+       int memLoc = machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc+4);
+        if (waitQ[deviceNumber].isEmpty()) {
+            IORequest r = new IORequest(DeviceControllerOperations.WRITE, currentProcess);
+            waitQ[deviceNumber].add(r);
+            machine.devices[deviceNumber].controlRegister.register[0] = DeviceControllerOperations.WRITE;
+            machine.devices[deviceNumber].controlRegister.register[1] = platter;
+            machine.devices[deviceNumber].controlRegister.register[2] = platStart; 
+            machine.devices[deviceNumber].controlRegister.register[3] = datasize;
+            
+            
+           for( int i = 0; i <  datasize; i ++){
+               machine.devices[deviceNumber].buffer[i] = memLoc+i;
+           }
+                      
+           
+            machine.devices[deviceNumber].controlRegister.latch(); // initiate the latch
+        } else {
+            IORequest r = new IORequest(DeviceControllerOperations.WRITE, currentProcess);
+            waitQ[deviceNumber].add(r);
+        }
+    }
     public int chooseNextProcess() {
         // set i to the next process go through the table to the end
         for (int i = currentProcess + 1; i < Process_Table.length; i++) {
@@ -370,15 +417,62 @@ public class OperatingSystem implements IInterruptHandler, ISystemCallHandler, I
         return 0;
     }
 
+    public void diag() {
+        boolean returnedFreeSpace = false; // We don't want the freeSpace output to be blank.  If this isn't changed by the end of the routine, print out a notifcation.
+
+        System.out.println("[Info] BEGIN diag() routine");
+        System.out.println("[Debug] Current state of programs:");
+        for (int i = 0; i < this.Process_Table.length; i++) {
+            if (this.Process_Table[i] != null) {
+                System.out.println("[" + i + "] " + "Base: " + this.Process_Table[i].base + " | " + "Limit: " + this.Process_Table[i].limit);
+            } else if (this.Process_Table[i] == null) {
+                System.out.println("[" + i + "] <null>");
+            }
+        }
+
+        System.out.println("[Debug] Current state of freeSpace's:");
+        for (freeSpace f : this.freespace) {
+            if (f != null) {
+                System.out.println(f);
+                returnedFreeSpace = true;
+            } else if (f == null) {
+                System.out.println("<null>");
+                returnedFreeSpace = true;
+            }
+        }
+
+        if (returnedFreeSpace == false) {
+            System.out.println("[Warning] The freespace list appears to be empty");
+        }
+
+        System.out.println("[Info] END diag() routine");
+    }
+
 
     /*
     * Handle a trap from the hardware.
-    *
+    * 
     * @param programCounter -- the program counter of the instruction after the
     * one that caused the trap.
-    *
+    * 
     * @param trapNumber -- the trap number for this trap.
      */
+    public void saveRegisters(int savedProgramCounter) {
+        Process_Table[currentProcess].acc = machine.cpu.acc;
+        Process_Table[currentProcess].x = machine.cpu.x;
+        Process_Table[currentProcess].pc = savedProgramCounter;
+    }
+
+    public void restoreRegisters() {
+        this.machine.memory.setBase(Process_Table[currentProcess].base);
+        this.machine.memory.setLimit(Process_Table[currentProcess].limit);
+
+        Process_Table[currentProcess].status = ProcessState.running;
+        this.machine.cpu.acc = Process_Table[currentProcess].acc;
+        this.machine.cpu.x = Process_Table[currentProcess].x;
+        this.machine.cpu.setPc(Process_Table[currentProcess].pc);
+    }
+
     @Override
     public synchronized void trap(int savedProgramCounter, int trapNumber) {
         //  leave this code here
@@ -391,7 +485,7 @@ public class OperatingSystem implements IInterruptHandler, ISystemCallHandler, I
         saveRegisters(savedProgramCounter);
 
         switch (trapNumber) {
-            case Trap.TIMER: // Time goes off
+            case Trap.TIMER: // Time goes off   
                 //set current process to ready
                 Process_Table[currentProcess].status = ProcessState.ready;
                 break;
@@ -402,66 +496,44 @@ public class OperatingSystem implements IInterruptHandler, ISystemCallHandler, I
                 freeSpace newfree = new freeSpace(Process_Table[currentProcess].base,
                         Process_Table[currentProcess].limit);
                 freespace.add(newfree);
-
-                // Process_Table[currentProcess] = null; // uncomment to omit ended PCBs
                 break;
             default:
                 System.err.println("UNHANDLED TRAP " + trapNumber);
                 System.exit(1);
         }
-        // set current process to choose next
+        // set current process to choose next 
         currentProcess = chooseNextProcess();
 
         //restore registers
         restoreRegisters();
-        Process_Table[currentProcess].status = ProcessState.running;
-
-    }
-
-    public void saveRegisters(int savedProgramCounter) {
-        Process_Table[currentProcess].acc = machine.cpu.acc;
-        Process_Table[currentProcess].x = machine.cpu.x;
-        Process_Table[currentProcess].pc = savedProgramCounter;
-    }
-
-    public void restoreRegisters() {
-        machine.memory.setBase(Process_Table[currentProcess].base);
-        machine.memory.setLimit(Process_Table[currentProcess].limit);
-        machine.cpu.acc = Process_Table[currentProcess].acc;
-        machine.cpu.x = Process_Table[currentProcess].x;
-        machine.cpu.setPc(Process_Table[currentProcess].pc);
     }
 
     /*
 	 * Handle a system call from the software.
-	 *
+	 * 
 	 * @param programCounter -- the program counter of the instruction after the
 	 * one that caused the trap.
-	 *
+	 * 
 	 * @param callNumber -- the callNumber of the system call.
-	 *
+	 * 
 	 * @param address -- the memory address of any parameters for the system
 	 * call.
      */
     @Override
     public synchronized void syscall(int savedProgramCounter, int callNumber) {
+        saveRegisters(savedProgramCounter);
 
-
-        // System.err.println("Before: " + Process_Table[currentProcess]);
         //  leave this code here
         CheckValid.syscallNumber(callNumber);
         if (!machine.cpu.runProg) {
             return;
         }
         //  end of code to leave
-        saveRegisters(savedProgramCounter);
         switch (callNumber) {
             case SystemCall.SYSTEM_BREAK: {
                 try {
-//                    System.err.println(Process_Table[currentProcess].acc);
-                    diag();
+//                    System.out.println(Process_Table[currentProcess].acc);
                     sbrk(Process_Table[currentProcess].acc);
-                    diag();
 
                 } catch (MemoryFault ex) {
                     Logger.getLogger(OperatingSystem.class.getName()).log(Level.SEVERE, null, ex);
@@ -469,61 +541,50 @@ public class OperatingSystem implements IInterruptHandler, ISystemCallHandler, I
                 break;
             }
             case SystemCall.WRITE_CONSOLE: {
-                writeConsole(this.machine.cpu.acc);
+                writeConsole();
+                 currentProcess = chooseNextProcess();
+                break;
+            }
+            case SystemCall.WRITE:{
+            try {
+                write();
+            } catch (MemoryFault ex) {
+                Logger.getLogger(OperatingSystem.class.getName()).log(Level.SEVERE, null, ex);
+            }
+                 currentProcess = chooseNextProcess();
+                break;
+            }
+            case SystemCall.READ:{
+            try {
+                read();
+            } catch (MemoryFault ex) {
+                Logger.getLogger(OperatingSystem.class.getName()).log(Level.SEVERE, null, ex);
+            }
+                 currentProcess = chooseNextProcess();
+                break;
             }
             default:
-                // System.err.println("UNHANDLED SYSCALL " + callNumber);
+                System.out.println("UNHANDLED SYSCALL " + callNumber);
                 System.exit(1);
         }
 
-        //System.err.println("After: " + Process_Table[currentProcess]);
         restoreRegisters();
-//        System.err.println("PC EQUALS:" +Process_Table[currentProcess].pc);
-        // System.err.println("EXITING SYSCALL");
+//        System.out.println("PC EQUALS:" +Process_Table[currentProcess].pc);
+       
     }
 
     /*
 	 * Handle an interrupt from the hardware.
-	 *
+	 * 
 	 * @param programCounter -- the program counter of the instruction after the
 	 * one that caused the trap.
-	 *
+	 * 
 	 * @param deviceNumber -- the device number that is interrupting.
      */
-    public void diag() {
-        boolean returnedFreeSpace = false; // We don't want the freeSpace output to be blank.  If this isn't changed by the end of the routine, print out a notifcation.
-        System.out.println("---------------------------------");
-        System.out.println("[Info] BEGIN diag() routine");
-        System.out.println("[Debug] Current state of programs:");
-        for (int i = 0; i < this.Process_Table.length; i++) {
-            if (this.Process_Table[i] != null) {
-                System.out.println("[" + i + "] " + "Base: " + this.Process_Table[i].base + " | " + "Limit: " + this.Process_Table[i].limit + " | " + "Status: " + this.Process_Table[i].status);
-            }
-//
-        }
-
-        System.out.println("[Debug] Current state of freeSpace's:");
-        for (freeSpace f : this.freespace) {
-            if (f != null) {
-                System.out.println(f);
-                returnedFreeSpace = true;
-            }
-            else if (f == null) {
-                System.out.println("<null>");
-                returnedFreeSpace = true;
-            }
-        }
-
-        if (returnedFreeSpace == false) {
-            System.out.println("[Warning] The freespace list appears to be empty");
-        }
-
-        System.out.println("[Info] END diag() routine");
-        System.out.println("----------------------------------");
-    }
-
     @Override
     public synchronized void interrupt(int savedProgramCounter, int deviceNumber) {
+        
+        saveRegisters(savedProgramCounter);
         //  leave this code here
         CheckValid.deviceNumber(deviceNumber);
         if (!machine.cpu.runProg) {
@@ -531,6 +592,65 @@ public class OperatingSystem implements IInterruptHandler, ISystemCallHandler, I
         }
         //  end of code to leave
 
-    }
+        machine.interruptRegisters.register[deviceNumber] = false;
+        Process_Table[waitQ[deviceNumber].peek().prognum].status = ProcessState.ready;
+      IORequest oldhead = waitQ[deviceNumber].remove();
+        switch (deviceNumber) {
+            case 0: { //keyboard
 
+            }
+            case 1: { //console
+                if(waitQ[deviceNumber].isEmpty()==false){
+            machine.devices[deviceNumber].controlRegister.register[0] = DeviceControllerOperations.WRITE; // operation
+            machine.devices[deviceNumber].controlRegister.register[1] = Process_Table[waitQ[deviceNumber].peek().prognum].acc; // what we want to write
+            machine.devices[deviceNumber].controlRegister.latch();
+            
+        }
+                break;
+            }
+            
+            case 2: { //disk1
+                int ref = Process_Table[waitQ[deviceNumber].peek().prognum].acc + Process_Table[waitQ[deviceNumber].peek().prognum].base;
+                if(waitQ[deviceNumber].isEmpty()==false){
+                    try {
+                     int rr = oldhead.requestType;
+//if rr is 0 its a write if rr is 1 its a read
+                     if ( rr == DeviceControllerOperations.WRITE){
+                         machine.devices[deviceNumber].controlRegister.register[0] = machine.memory.load(ref);
+                       machine.devices[deviceNumber].controlRegister.register[1] = machine.memory.load(ref + 1);
+                      int datasize = machine.devices[deviceNumber].controlRegister.register[2] = machine.memory.load(ref + 2);
+                       int memloc = machine.devices[deviceNumber].controlRegister.register[3] = machine.memory.load(ref + 3);
+                       machine.devices[deviceNumber].controlRegister.register[4] = machine.memory.load(ref + 4);
+                       
+                        for( int i = 0; i < datasize ; i ++){
+               machine.devices[deviceNumber].buffer[i] = memloc + i;
+           }
+                     }
+                     else{
+                         machine.devices[deviceNumber].controlRegister.register[0] = machine.memory.load(ref);
+                         machine.devices[deviceNumber].controlRegister.register[1] = machine.memory.load(ref + 1);
+                      int datasize = machine.devices[deviceNumber].controlRegister.register[2] = machine.memory.load(ref + 2);
+                       int memloc = machine.devices[deviceNumber].controlRegister.register[3] = machine.memory.load(ref + 3);
+                       machine.devices[deviceNumber].controlRegister.register[4] = machine.memory.load(ref + 4);
+                     }
+                    } catch (MemoryFault ex) {
+                        Logger.getLogger(OperatingSystem.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                    
+            machine.devices[deviceNumber].controlRegister.latch();
+            
+        }
+            break; 
+
+            }
+            case 3: { //disk2
+
+            }
+
+        }
+        
+        restoreRegisters();
+        
+
+    }
 }
