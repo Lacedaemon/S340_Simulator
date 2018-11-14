@@ -201,4 +201,148 @@ public class main1 {
     //}
     //public Program P3(){
     // }
+    
+    public static Program diskIO() {
+    /*
+    * Program Adjustment
+    *
+    * Change the following block according to the program's instruction size
+    */
+    int dataSize = 25;
+    int diskCommandStart = 109; // set to instruction size + 1
+    int restOfDiskCommands = diskCommandStart + 1; // set to start + 1, to be incremented later
+    int payloadStart = diskCommandStart + 5; // The +5 offset is because there are 5 parameters to be passed to the disk that are located in the first five data slots.
+    int restOfPayload = payloadStart + 1; // set to start + 1, to be incremented later
+
+    ProgramBuilder b = new ProgramBuilder();
+    b.size(dataSize);
+
+    /*
+    * BEGIN SystemCall.WRITE
+    */
+
+    /*
+    * BEGIN Disk Commands
+    *
+    * Adjust as needed. The fifth argument, dataSize, can be edited above.
+    */
+    int platterNumber = 3;
+    int platterStartPosition = 31;
+    int memoryLocation = payloadStart;
+    int deviceNumber = Machine.DISK1;
+    /*
+    * END Disk Commands
+    */
+
+    /*
+    * BEGIN Loading disk commands into memory.
+    */
+    b.loadi(platterNumber);
+    b.store(diskCommandStart);
+    b.loadi(platterStartPosition);
+    b.store(restOfDiskCommands);
+    restOfDiskCommands++;
+    b.loadi(dataSize);
+    b.store(restOfDiskCommands);
+    restOfDiskCommands++;
+    b.loadi(memoryLocation);
+    b.store(restOfDiskCommands);
+    restOfDiskCommands++;
+    b.loadi(deviceNumber);
+    b.store(restOfDiskCommands);
+    /*
+    * END Loading disk commands into memory.
+    */
+
+    /*
+    * BEGIN Storing the values into memory
+    */
+    b.loadi(1);
+    b.store(payloadStart);
+    b.loadi(2);
+    b.store(restOfPayload);
+    restOfPayload++;
+    b.loadi(3);
+    b.store(restOfPayload);
+    restOfPayload++;
+    b.loadi(4);
+    b.store(restOfPayload);
+    restOfPayload++;
+    b.loadi(5);
+    b.store(restOfPayload);
+    restOfPayload++;
+    b.loadi(6);
+    b.store(restOfPayload);
+    restOfPayload++;
+    b.loadi(7);
+    b.store(restOfPayload);
+    restOfPayload++;
+    b.loadi(8);
+    b.store(restOfPayload);
+    restOfPayload++;
+    b.loadi(9);
+    b.store(restOfPayload);
+    restOfPayload++;
+    b.loadi(10);
+    b.store(restOfPayload);
+    restOfPayload++;
+    b.loadi(11);
+    b.store(restOfPayload);
+    restOfPayload++;
+    b.loadi(12);
+    b.store(restOfPayload);
+    restOfPayload++;
+    b.loadi(13);
+    b.store(restOfPayload);
+    restOfPayload++;
+    b.loadi(14);
+    b.store(restOfPayload);
+    restOfPayload++;
+    b.loadi(15);
+    b.store(restOfPayload);
+    restOfPayload++;
+    b.loadi(16);
+    b.store(restOfPayload);
+    restOfPayload++;
+    b.loadi(17);
+    b.store(restOfPayload);
+    restOfPayload++;
+    b.loadi(18);
+    b.store(restOfPayload);
+    restOfPayload++;
+    b.loadi(19);
+    b.store(restOfPayload);
+    restOfPayload++;
+    b.loadi(20);
+    b.store(restOfPayload);
+    /*
+    * END Loading the values into memory
+    */
+
+    b.syscall(SystemCall.WRITE);
+    /*
+    * END SystemCall.WRITE
+    */
+
+    /*
+    * BEGIN SystemCall.READ
+    *
+    * The disk commands should be the same, apart from the memory location, which should be different
+    */
+
+    memoryLocation = payloadStart + dataSize;
+
+    b.loadi(memoryLocation);
+    b.store(diskCommandStart + 4);
+
+    //b.syscall(SystemCall.READ);
+
+    //b.syscall(SystemCall.WRITE_CONSOLE);
+
+    Program p = b.build();
+
+    System.out.println(p);
+
+    return p;
+    }
 }
