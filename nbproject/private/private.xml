@@ -12,7 +12,8 @@
         </group>
         <group name="teaching"/>
         <group>
-            <file>file:/Users/nathan/Documents/School/Fall%202018/CSC-340-01/S340_Simulator/src/s340/hardware/DeviceControlRegister.java</file>
+            <file>file:/Users/nathan/Documents/School/Fall%202018/CSC-340-01/S340_Simulator/src/s340/hardware/device/Disk.java</file>
+            <file>file:/Users/nathan/Documents/School/Fall%202018/CSC-340-01/S340_Simulator/src/s340/software/os/ProcessState.java</file>
             <file>file:/Users/nathan/Documents/School/Fall%202018/CSC-340-01/S340_Simulator/src/s340/software/Main.java</file>
             <file>file:/Users/nathan/Documents/School/Fall%202018/CSC-340-01/S340_Simulator/src/s340/software/os/SystemCall.java</file>
             <file>file:/Users/nathan/Documents/School/Fall%202018/CSC-340-01/S340_Simulator/src/s340/software/os/IORequest.java</file>
