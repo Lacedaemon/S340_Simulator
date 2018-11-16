@@ -13,5 +13,6 @@ package s340.software.os;
 public enum ProcessState {
     ready,
     end,
+    waiting,
     running;
 }

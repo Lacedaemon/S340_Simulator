@@ -10,10 +10,12 @@ package s340.software.os;
  * @author nathan
  */
 public class IORequest {
+    int prognum;
     int requestType;
     int payload;
     
     public IORequest(int request, int incomingPayload) {
+        this.prognum = prognum;
         this.requestType = request;
         this.payload = incomingPayload;
     }

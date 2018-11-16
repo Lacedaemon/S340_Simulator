@@ -12,13 +12,13 @@ package s340.software;
 import java.util.LinkedList;
 import java.util.List;
 import s340.hardware.Machine;
-import static s340.software.Main.pOfi;
+//import static s340.software.Main.pOfi;
 import s340.software.os.Program;
 import s340.software.os.OperatingSystem;
 import s340.software.os.ProgramBuilder;
 import s340.software.os.SystemCall;
 
-public class main1 {
+public class Main {
 
     public static void main(String[] args) throws Exception {
         //	setup the hardware, the operating system, and power up
@@ -63,7 +63,7 @@ public class main1 {
         ProgramBuilder c = new ProgramBuilder();
         c.size(1000);
         c.loadi(1);
-        c.store(81);
+        c.store(81);        
         c.loadi(2);
         c.store(82);
         c.loadi(3);
@@ -114,7 +114,6 @@ public class main1 {
         c.loadi(memoryLocation);
         c.store(504);
         
-        
         c.load(500);
         c.syscall(SystemCall.WRITE);
         c.loadi(101);
@@ -122,12 +121,8 @@ public class main1 {
         c.load(500);
         c.syscall(SystemCall.READ);
         
-        
-        
         c.load(81);
-        c.syscall(1);
         c.load(102);
-        c.syscall(1);
         c.load(103);
         c.syscall(1);
         c.load(104);
@@ -164,10 +159,9 @@ public class main1 {
         c.syscall(1);
         c.load(120);
         c.syscall(1);
-        Program f =c.build();
+        Program f = c.build();
+        System.out.println(f);
         return f;
-        
-
     }
 
     public static Program P1(int i) {

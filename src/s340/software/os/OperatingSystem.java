@@ -424,7 +424,7 @@ public void read () throws MemoryFault {
         System.out.println("[Debug] Current state of programs:");
         for (int i = 0; i < this.Process_Table.length; i++) {
             if (this.Process_Table[i] != null) {
-                System.out.println("[" + i + "] " + "Base: " + this.Process_Table[i].base + " | " + "Limit: " + this.Process_Table[i].limit);
+                System.out.println("[" + i + "] " + "Base: " + this.Process_Table[i].base + " | " + "Limit: " + this.Process_Table[i].limit + this.Process_Table[i].status);
             } else if (this.Process_Table[i] == null) {
                 System.out.println("[" + i + "] <null>");
             }
@@ -506,6 +506,8 @@ public void read () throws MemoryFault {
 
         //restore registers
         restoreRegisters();
+        
+        //diag();
     }
 
     /*
