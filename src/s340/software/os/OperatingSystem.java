@@ -35,9 +35,9 @@ public class OperatingSystem implements IInterruptHandler, ISystemCallHandler, I
     //List of free spaces
     List<freeSpace> freespace = new ArrayList<>();
     List<Program> program = new LinkedList<>();
-    public final int head =0;
+    public final int head = 0;
 
-    Queue<IORequest>[] waitQ = new Queue[Machine.NUM_DEVICES];
+    LinkedList<IORequest>[] waitQ = new LinkedList[Machine.NUM_DEVICES];
 
 
     /*
@@ -329,7 +329,7 @@ public class OperatingSystem implements IInterruptHandler, ISystemCallHandler, I
         }
     }
 
-    public void writeConsole()  {
+    public void writeConsole() {
         Process_Table[currentProcess].status = ProcessState.waiting;
         if (waitQ[Machine.CONSOLE].isEmpty()) {
             IORequest r = new IORequest(DeviceControllerOperations.WRITE, currentProcess);
@@ -343,78 +343,80 @@ public class OperatingSystem implements IInterruptHandler, ISystemCallHandler, I
         }
 
     }
-    public void whatsinPlatter(int deviceNumber,int platter,int platStart,int datasize,int memLoc) throws MemoryFault{
-       
-    }
-public void read () throws MemoryFault {
-     setBaseLimit();
-      int deviceNumber = machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc);
-        int platter = machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc+1 );
-        int platStart = machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc+2);
-        int datasize = machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc +3);
-        int memLoc = machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc+4)+Process_Table[currentProcess].base;
-     whatsinPlatter(deviceNumber,platter,platStart,datasize,memLoc);
-            Process_Table[currentProcess].status = ProcessState.waiting;
- 
-       System.out.println("PLATTER " + platter);
-       System.out.println("PLATTER start " + platStart);       
-       System.out.println("MEM " + memLoc);
-       System.out.println("DEVICE NUMBER  " + deviceNumber);
 
-          if (waitQ[deviceNumber].isEmpty()) {
+    public void whatsinPlatter(int deviceNumber, int platter, int platStart, int datasize, int memLoc) throws MemoryFault {
+
+    }
+
+    public void read() throws MemoryFault {
+        setBaseLimit();
+        int deviceNumber = machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc);
+        int platter = machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc + 1);
+        int platStart = machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc + 2);
+        int datasize = machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc + 3);
+        int memLoc = machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc + 4) + Process_Table[currentProcess].base;
+        whatsinPlatter(deviceNumber, platter, platStart, datasize, memLoc);
+        Process_Table[currentProcess].status = ProcessState.waiting;
+
+        System.out.println("PLATTER " + platter);
+        System.out.println("PLATTER start " + platStart);
+        System.out.println("MEM " + memLoc);
+        System.out.println("DEVICE NUMBER  " + deviceNumber);
+
+        if (waitQ[deviceNumber].isEmpty()) {
             IORequest r = new IORequest(DeviceControllerOperations.WRITE, currentProcess);
             waitQ[deviceNumber].add(r);
             machine.devices[deviceNumber].controlRegister.register[0] = DeviceControllerOperations.READ;
             machine.devices[deviceNumber].controlRegister.register[1] = platter;
-            machine.devices[deviceNumber].controlRegister.register[2] = platStart; 
+            machine.devices[deviceNumber].controlRegister.register[2] = platStart;
             machine.devices[deviceNumber].controlRegister.register[3] = datasize;
 
-            
-            
-           for( int i = 0; i <  datasize; i ++){
-            machine.memory.store(i + memLoc,machine.devices[deviceNumber].buffer[i]);
-             
-           }
-                     
-           
+            for (int i = 0; i < datasize; i++) {
+                machine.memory.store(i + memLoc, machine.devices[deviceNumber].buffer[i]);
+
+            }
+
             machine.devices[deviceNumber].controlRegister.latch(); // initiate the latch
         } else {
             IORequest r = new IORequest(DeviceControllerOperations.READ, currentProcess);
             waitQ[deviceNumber].add(r);
         }
-}
-public void sstf( )throws MemoryFault{
-    
-}
-    public void write () throws MemoryFault{
-       
-       setBaseLimit();
-        int deviceNumber = machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc);
-        int platter = machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc+1 );
-        int platStart = machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc+2);
-        int datasize = machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc +3);
-        int memLoc = machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc+4)+Process_Table[currentProcess].base;
-       Process_Table[currentProcess].status = ProcessState.waiting;
-       System.out.println("ACC:" +Process_Table[currentProcess].acc);
-     
-       
-            
-            machine.devices[deviceNumber].controlRegister.register[0] = DeviceControllerOperations.WRITE;
-            machine.devices[deviceNumber].controlRegister.register[1] = platter;
-            machine.devices[deviceNumber].controlRegister.register[2] = platStart; 
-            machine.devices[deviceNumber].controlRegister.register[3] = datasize;
-            
-            
-           for( int i = 0; i <  datasize; i ++){
-               machine.devices[deviceNumber].buffer[i] =machine.memory.load(memLoc+i);
-               System.out.println("MEM LOC " + memLoc);
-               
-           }
-                      System.out.println(Arrays.toString(machine.devices[deviceNumber].buffer));
-           
-            machine.devices[deviceNumber].controlRegister.latch(); // initiate the latch
-                            
     }
+
+    public void write() throws MemoryFault {
+        System.out.println("[Debug] BEGIN WRITE");
+
+        setBaseLimit();
+        
+        System.out.println("[Debug] Base & Limit set");
+        int deviceNumber = machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc);
+        int platter = machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc + 1);
+        int platStart = machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc + 2);
+        int datasize = machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc + 3);
+        int memLoc = machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc + 4) + Process_Table[currentProcess].base;
+        Process_Table[currentProcess].status = ProcessState.waiting;
+        System.out.println("ACC:" + Process_Table[currentProcess].acc);
+
+        machine.devices[deviceNumber].controlRegister.register[0] = DeviceControllerOperations.WRITE;
+        machine.devices[deviceNumber].controlRegister.register[1] = platter;
+        machine.devices[deviceNumber].controlRegister.register[2] = platStart;
+        machine.devices[deviceNumber].controlRegister.register[3] = datasize;
+        
+        System.out.println("[Debug] Registers set");
+
+        for (int i = 0; i < datasize; i++) {
+            machine.devices[deviceNumber].buffer[i] = machine.memory.load(memLoc + i);
+            System.out.println("MEM LOC " + memLoc);
+
+        }
+        System.out.println(Arrays.toString(machine.devices[deviceNumber].buffer));
+
+        machine.devices[deviceNumber].controlRegister.latch(); // initiate the latch
+        
+        System.out.println("[Debug] END WRITE");
+
+    }
+
     public int chooseNextProcess() {
         // set i to the next process go through the table to the end
         for (int i = currentProcess + 1; i < Process_Table.length; i++) {
@@ -535,10 +537,11 @@ public void sstf( )throws MemoryFault{
 	 * @param address -- the memory address of any parameters for the system
 	 * call.
      */
-    public void setBaseLimit(){
-         machine.memory.setBase(0);
+    public void setBaseLimit() {
+        machine.memory.setBase(0);
         machine.memory.setLimit(Machine.MEMORY_SIZE);
     }
+
     @Override
     public synchronized void syscall(int savedProgramCounter, int callNumber) {
         saveRegisters(savedProgramCounter);
@@ -563,35 +566,35 @@ public void sstf( )throws MemoryFault{
             }
             case SystemCall.WRITE_CONSOLE: {
                 writeConsole();
-                 currentProcess = chooseNextProcess();
+                currentProcess = chooseNextProcess();
                 break;
             }
-            case SystemCall.WRITE:{
-            try {
-            IORequest r = new IORequest(DeviceControllerOperations.WRITE, currentProcess);
-            int deviceNumber =machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc);
-            System.out.println("DEVICE NUMBER"+deviceNumber);
-            System.out.println("ACCC" + Process_Table[currentProcess].acc);
-            System.out.println("BASE" + Process_Table[currentProcess].base);
-            waitQ[machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc)].add(r);
-            
-            if (waitQ[machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc)].size() == 1){
-                write();
-            }
-            } catch (MemoryFault ex) {
-                Logger.getLogger(OperatingSystem.class.getName()).log(Level.SEVERE, null, ex);
-            }
-                 currentProcess = chooseNextProcess();
+            case SystemCall.WRITE: {
+                try {
+                    IORequest r = new IORequest(DeviceControllerOperations.WRITE, currentProcess);
+                    int deviceNumber = machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc);
+                    System.out.println("DEVICE NUMBER" + deviceNumber);
+                    System.out.println("ACCC" + Process_Table[currentProcess].acc);
+                    System.out.println("BASE" + Process_Table[currentProcess].base);
+                    waitQ[machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc)].add(r);
+
+                    if (waitQ[machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc)].size() == 1) {
+                        write();
+                    }
+                } catch (MemoryFault ex) {
+                    Logger.getLogger(OperatingSystem.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                currentProcess = chooseNextProcess();
                 break;
             }
-            case SystemCall.READ:{
-            try {
-                System.out.println("READING OF");
-                read();
-            } catch (MemoryFault ex) {
-                Logger.getLogger(OperatingSystem.class.getName()).log(Level.SEVERE, null, ex);
-            }
-                 currentProcess = chooseNextProcess();
+            case SystemCall.READ: {
+                try {
+                    System.out.println("READING OF");
+                    read();
+                } catch (MemoryFault ex) {
+                    Logger.getLogger(OperatingSystem.class.getName()).log(Level.SEVERE, null, ex);
+                }
+                currentProcess = chooseNextProcess();
                 break;
             }
             default:
@@ -601,8 +604,46 @@ public void sstf( )throws MemoryFault{
 
         restoreRegisters();
 //        System.out.println("PC EQUALS:" +Process_Table[currentProcess].pc);
-       
+
     }
+    
+    /*
+    * This method implements the SSTF disk scheduling algorithm.
+    */
+    public IORequest SSTF(int deviceNumber) {
+        IORequest oldhead = waitQ[deviceNumber].remove();
+        IORequest closest = null;
+        int min = Integer.MAX_VALUE;
+        
+        //disck scheduling
+        try {
+            int hedlo = machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc + 2) + machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc + 3);
+            for (IORequest zzz : waitQ[deviceNumber]) {
+                int zzzstart = machine.memory.load(Process_Table[zzz.prognum].base + Process_Table[zzz.prognum].acc + 2);
+
+                int distance = Math.abs(zzzstart - hedlo);
+
+                //if its the closest to the headlocation 
+                if (distance < min) {
+
+                    closest = zzz;
+                    min = distance;
+
+                }
+
+            }
+            waitQ[deviceNumber].remove(closest);
+
+            waitQ[deviceNumber].addFirst(closest);
+
+        } catch (MemoryFault ex) {
+            Logger.getLogger(OperatingSystem.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        return oldhead;
+    }
+            
+            
 
     /*
 	 * Handle an interrupt from the hardware.
@@ -614,7 +655,7 @@ public void sstf( )throws MemoryFault{
      */
     @Override
     public synchronized void interrupt(int savedProgramCounter, int deviceNumber) {
-       
+
         saveRegisters(savedProgramCounter);
         setBaseLimit();
         //  leave this code here
@@ -625,68 +666,31 @@ public void sstf( )throws MemoryFault{
         //  end of code to leave
 
         machine.interruptRegisters.register[deviceNumber] = false;
-        Process_Table[waitQ[deviceNumber].peek().prognum].status = ProcessState.ready;
-      IORequest oldhead = waitQ[deviceNumber].remove();
-      IORequest closest = null;
-      int min = Integer.MAX_VALUE;
-      //disck scheduling
-      
-      
-      
-      
-      
-      
-//        try {
-//            int hedlo = machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc+2) + machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc+3);
-//            for (IORequest zzz : waitQ[deviceNumber]) {
-//                int zzzstart = machine.memory.load(Process_Table[zzz.prognum].base + Process_Table[zzz.prognum].acc+2);
-//                
-//                int distance = Math.abs(zzzstart - hedlo);
-//               
-//                //if its the closest to the headlocation 
-//                if (distance < min){
-//                    
-//                 closest = zzz;
-//                 min = distance;
-//                 
-//                }
-//                           
-//  
-//            }
-//             waitQ[deviceNumber].remove(closest);
-//             
-//             waitQ[deviceNumber].add(closest);
-//             
-//        } catch (MemoryFault ex) {
-//            Logger.getLogger(OperatingSystem.class.getName()).log(Level.SEVERE, null, ex);
-//        }
-
-
-
-
+        Process_Table[waitQ[deviceNumber].peek().prognum].status = ProcessState.ready;  
+        
+        IORequest oldhead = SSTF(deviceNumber);
 
         switch (deviceNumber) {
             case 0: { //keyboard
 
             }
             case 1: { //console
-                if(waitQ[deviceNumber].isEmpty()==false){
-            machine.devices[deviceNumber].controlRegister.register[0] = DeviceControllerOperations.WRITE; // operation
-            machine.devices[deviceNumber].controlRegister.register[1] = Process_Table[waitQ[deviceNumber].peek().prognum].acc; // what we want to write
-            machine.devices[deviceNumber].controlRegister.latch();
-            
-        }
+                if (waitQ[deviceNumber].isEmpty() == false) {
+                    machine.devices[deviceNumber].controlRegister.register[0] = DeviceControllerOperations.WRITE; // operation
+                    machine.devices[deviceNumber].controlRegister.register[1] = Process_Table[waitQ[deviceNumber].peek().prognum].acc; // what we want to write
+                    machine.devices[deviceNumber].controlRegister.latch();
+
+                }
                 break;
             }
-            
+
             case 2: { //disk1
-               // int ref = Process_Table[waitQ[deviceNumber].peek().prognum].acc + Process_Table[waitQ[deviceNumber].peek().prognum].base;
-                if(waitQ[deviceNumber].isEmpty() == false){
+                // int ref = Process_Table[waitQ[deviceNumber].peek().prognum].acc + Process_Table[waitQ[deviceNumber].peek().prognum].base;
+                if (waitQ[deviceNumber].isEmpty() == false) {
                     try {
-                     int rr = oldhead.requestType;
-//if rr is 0 its a write if rr is 1 its a read
-                     if ( rr == DeviceControllerOperations.WRITE){
-                         write();
+//if requestType is 0 its a write if rr is 1 its a read
+                        if (oldhead.requestType == DeviceControllerOperations.WRITE) {
+                            write();
 //                         machine.devices[deviceNumber].controlRegister.register[0] = machine.memory.load(ref);
 //                       machine.devices[deviceNumber].controlRegister.register[1] = machine.memory.load(ref + 1);
 //                      int datasize = machine.devices[deviceNumber].controlRegister.register[2] = machine.memory.load(ref + 2);
@@ -696,18 +700,17 @@ public void sstf( )throws MemoryFault{
 //                        for( int i = 0; i < datasize ; i ++){
 //               machine.devices[deviceNumber].buffer[i] = memloc + i;
 //           }
-                     }
-                     else{
-                         read();
-                     }
+                        } else {
+                            read();
+                        }
                     } catch (MemoryFault ex) {
                         Logger.getLogger(OperatingSystem.class.getName()).log(Level.SEVERE, null, ex);
                     }
-                    
-            machine.devices[deviceNumber].controlRegister.latch();
-            
-        }
-            break; 
+
+                    machine.devices[deviceNumber].controlRegister.latch();
+
+                }
+                break;
 
             }
             case 3: { //disk2
@@ -715,9 +718,8 @@ public void sstf( )throws MemoryFault{
             }
 
         }
-        
+
         restoreRegisters();
-        
 
     }
 }
