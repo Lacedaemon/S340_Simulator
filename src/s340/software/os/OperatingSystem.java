@@ -396,6 +396,8 @@ public class OperatingSystem implements IInterruptHandler, ISystemCallHandler, I
         int memLoc = machine.memory.load(Process_Table[currentProcess].base + Process_Table[currentProcess].acc + 4) + Process_Table[currentProcess].base;
         Process_Table[currentProcess].status = ProcessState.waiting;
         System.out.println("ACC:" + Process_Table[currentProcess].acc);
+        
+        System.out.println("[Debug] deviceNumber: " + deviceNumber);
 
         machine.devices[deviceNumber].controlRegister.register[0] = DeviceControllerOperations.WRITE;
         machine.devices[deviceNumber].controlRegister.register[1] = platter;
