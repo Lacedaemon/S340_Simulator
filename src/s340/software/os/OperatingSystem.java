@@ -462,6 +462,8 @@ public class OperatingSystem implements IInterruptHandler, ISystemCallHandler, I
                     System.out.println("[Debug] Machine.CONSOLE waitQ:");
                 case Machine.DISK1:
                     System.out.println("[Debug] Machine.DISK1 waitQ:");
+                case Machine.DISK2:
+                    System.out.println("[Debug] Machine.DISK2 waitQ:");
             }
             
             for (int j = 0; j < waitQ[i].size(); j++) {
