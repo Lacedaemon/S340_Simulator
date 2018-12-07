@@ -337,7 +337,7 @@ public class OperatingSystem implements IInterruptHandler, ISystemCallHandler, I
             machine.devices[Machine.CONSOLE].controlRegister.register[1] = Process_Table[next.prognum].acc; // what we want to write
             machine.devices[Machine.CONSOLE].controlRegister.latch(); // initiate the latch
         }
-       
+
         //System.out.println(waitQ[Machine.CONSOLE].size()+"WRITE Console");
     }
 
@@ -450,12 +450,12 @@ public class OperatingSystem implements IInterruptHandler, ISystemCallHandler, I
 
         System.out.println("[Info] END diag() routine");
     }
-    
+
     public void deviceDiag() {
         System.out.println("[Debug] BEGIN deviceDiag()");
-        
+
         for (int i = 0; i < waitQ.length; i++) {
-            switch(i) {
+            switch (i) {
                 case Machine.KEYBOARD:
                     System.out.println("[Debug] Machine.KEYBOARD waitQ:");
                 case Machine.CONSOLE:
@@ -465,9 +465,11 @@ public class OperatingSystem implements IInterruptHandler, ISystemCallHandler, I
                 case Machine.DISK2:
                     System.out.println("[Debug] Machine.DISK2 waitQ:");
             }
-            
-            for (int j = 0; j < waitQ[i].size(); j++) {
-                System.out.println(waitQ[i].get(j));
+
+            if (!waitQ[i].isEmpty()) {
+                for (int j = 0; j < waitQ[i].size(); j++) {
+                    System.out.println(waitQ[i].get(j));
+                }
             }
         }
     }
@@ -570,10 +572,10 @@ public class OperatingSystem implements IInterruptHandler, ISystemCallHandler, I
                 break;
             }
             case SystemCall.WRITE_CONSOLE: {
-                 IORequest r = new IORequest(DeviceControllerOperations.WRITE, currentProcess);
+                IORequest r = new IORequest(DeviceControllerOperations.WRITE, currentProcess);
                 writeConsole(r);
                 currentProcess = chooseNextProcess();
-                
+
                 waitQ[Machine.CONSOLE].add(r);
                 break;
             }
@@ -681,7 +683,7 @@ public class OperatingSystem implements IInterruptHandler, ISystemCallHandler, I
         IORequest oldhead = waitQ[deviceNumber].remove();
         Process_Table[oldhead.prognum].status = ProcessState.ready;
 
-        IORequest next =null;
+        IORequest next = null;
         switch (deviceNumber) {
             case 0: { //keyboard
 
@@ -707,14 +709,12 @@ public class OperatingSystem implements IInterruptHandler, ISystemCallHandler, I
                             write(next);
 
                         } else {
-                           // System.out.println("WHY YOU DONT WORK");
+                            // System.out.println("WHY YOU DONT WORK");
                             read(next);
                         }
                     } catch (MemoryFault ex) {
                         Logger.getLogger(OperatingSystem.class.getName()).log(Level.SEVERE, null, ex);
                     }
-
-                   
 
                 }
                 break;
