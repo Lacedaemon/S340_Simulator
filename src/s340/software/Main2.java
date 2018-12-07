@@ -28,18 +28,43 @@ public class Main2 {
         machine.powerUp(os);
         List<Program> programs = new LinkedList<>();
         //P1test(os, programs);
-        programs.add(P6small(1));
-        programs.add(P6small(2));
-        programs.add(P6small(90));
-         programs.add(P6small(3));
-          programs.add(P6small(4));
-           programs.add(P6small(5));
-            programs.add(P6small(6)); 
-             programs.add(P6small(7));
-              programs.add(P6small(8));
-               programs.add(P6small(9));
-               programs.add(P6small(10));
-            
+        programs.add(P1(1));
+        programs.add(P1(2));
+        programs.add(P1(3));
+        // start will test write read then write to console 
+       // programs.add(P2(31,0));
+        //end test
+                 //This will test disk scheduling and starvation to see how it handles having a program at the end being scheduled
+//        programs.add(P6small(1));
+//        programs.add(P6small(2));
+//        programs.add(P6small(90));
+//         programs.add(P6small(3));
+//          programs.add(P6small(4));
+//           programs.add(P6small(5));
+//            programs.add(P6small(6)); 
+//             programs.add(P6small(7));
+//             programs.add(P6small(8));
+             
+             
+               // end of test for disk scheduling by starvation
+                
+             
+             //programs.add(P2);
+           //Start schedule three programs all utilizing write
+           //Platter starts at 10 
+           //programs.add(P3());
+           //platter start at 30
+            //programs.add(P5());
+            // platter starts 20
+            //programs.add(P4());
+//end test of all programs running write at the same time
+//Start test with write/read to write console running simultaneously
+//programs.add(writeRead(16,20,300));
+//programs.add(writeRead(5,9,700));
+//programs.add(writeRead(10,30,500));
+//end test write to read to write console/ disk scheduling
+
+//End test read
         os.schedule(programs);
 
     }
@@ -89,6 +114,52 @@ public class Main2 {
         return f;
 
     }
+    public static Program writeRead(int a,int start, int wheretoRead){
+       int platter =3;
+        int platterStart = start;
+        int dataSize = 5;
+        int memoryLocation =450 ;
+        int deviceNumber = Machine.DISK1;
+          
+        ProgramBuilder c = new ProgramBuilder();
+        c.size(1000); 
+         c.loadi(a);
+        c.store(memoryLocation);        
+        c.loadi(a+1);
+        c.store(memoryLocation + 1);
+        c.loadi(a+2);
+        c.store(memoryLocation + 2);
+        c.loadi(a+3);
+        c.store(memoryLocation + 3);
+        c.loadi(a+4);
+        c.store(memoryLocation + 4);
+        c.loadi(deviceNumber);
+        c.store(900);
+        c.loadi(platter);
+        c.store(901);
+        c.loadi(platterStart);
+        c.store(902);
+        c.loadi(dataSize);
+        c.store(903);
+        c.loadi(memoryLocation);
+        c.store(904);
+        
+        c.loadi(900);
+        c.syscall(SystemCall.WRITE);
+          c.loadi(wheretoRead);
+        c.store(904);
+        c.loadi(900);
+        c.syscall(SystemCall.READ);
+        for(int i = wheretoRead; i < wheretoRead+dataSize; i++)
+        
+        {
+        c.load(i);
+        c.syscall(1);
+        }
+        c.end();
+         Program f = c.build();
+         return f;
+}
       public static Program P5(){
        int platter =3;
         int platterStart = 30;
@@ -121,11 +192,13 @@ public class Main2 {
         
         c.loadi(900);
         c.syscall(SystemCall.WRITE);
+          c.loadi(500);
+        c.store(804);
+        c.loadi(800);
+        c.syscall(SystemCall.READ);
         c.end();
          Program f = c.build();
-       
-      //System.out.println("Program 5 "+f);
-        return f;
+         return f;
 }
     public static Program P4(){
        int platter =3;
@@ -159,6 +232,7 @@ public class Main2 {
         
         c.loadi(700);
         c.syscall(SystemCall.WRITE);
+        c.end();
          Program f = c.build();
         // c.end();
         return f;
@@ -213,9 +287,9 @@ public static Program P3(){
 
 
 
-    public static Program P2() {
+    public static Program P2(int start, int val) {
         int platter =3;
-        int platterStart = 31;
+        int platterStart = start;
         int dataSize = 19;
         int memoryLocation =450 ;
         int deviceNumber = Machine.DISK1;
@@ -304,16 +378,10 @@ public static Program P3(){
         b.store(43);
         b.store(44);
 
-        b.load(40);
-        b.syscall(1);
-        b.load(41);
-        b.syscall(1);
-        b.load(42);
-        b.syscall(1);
-        b.load(43);
-        b.syscall(1);
-        b.load(44);
-        b.syscall(1);
+        for(int a=40; a<44;i++){
+            b.load(a);
+            b.syscall(1);
+        }
         b.end();
 
         Program a = b.build();
