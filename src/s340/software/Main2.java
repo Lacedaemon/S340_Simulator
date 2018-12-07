@@ -28,7 +28,18 @@ public class Main2 {
         machine.powerUp(os);
         List<Program> programs = new LinkedList<>();
         //P1test(os, programs);
-        programs.add(P2());
+        programs.add(P6small(1));
+        programs.add(P6small(2));
+        programs.add(P6small(90));
+         programs.add(P6small(3));
+          programs.add(P6small(4));
+           programs.add(P6small(5));
+            programs.add(P6small(6)); 
+             programs.add(P6small(7));
+              programs.add(P6small(8));
+               programs.add(P6small(9));
+               programs.add(P6small(10));
+            
         os.schedule(programs);
 
     }
@@ -45,20 +56,168 @@ public class Main2 {
     }
 
     public static void P1test(OperatingSystem os, List<Program> programs) throws Exception {
-   //     programs.add(P1(1));
-      //  programs.add(P1(2));
-      //  programs.add(P1(3));
-        //programs.add(P1(4));
-        programs.add(P2());
-
         os.schedule(programs);
+    }public static Program P6small(int val){
+       int platter =3;
+        int platterStart = val;
+        int dataSize = 1;
+        int memoryLocation =450 ;
+        int deviceNumber = Machine.DISK1;
+        
+          
+        ProgramBuilder c = new ProgramBuilder();
+        c.size(1000); 
+         c.loadi(1);
+        c.store(memoryLocation);
+         c.loadi(deviceNumber);
+        c.store(900);
+        c.loadi(platter);
+        c.store(901);
+        c.loadi(platterStart);
+        c.store(902);
+        c.loadi(dataSize);
+        c.store(903);
+        c.loadi(memoryLocation);
+        c.store(904);
+        
+        c.loadi(900);
+        c.syscall(SystemCall.WRITE);
+        c.end();
+         Program f = c.build();
+       
+      //System.out.println("Program 5 "+f);
+        return f;
+
     }
+      public static Program P5(){
+       int platter =3;
+        int platterStart = 30;
+        int dataSize = 5;
+        int memoryLocation =450 ;
+        int deviceNumber = Machine.DISK1;
+          
+        ProgramBuilder c = new ProgramBuilder();
+        c.size(1000); 
+         c.loadi(1);
+        c.store(memoryLocation);        
+        c.loadi(2);
+        c.store(memoryLocation + 1);
+        c.loadi(3);
+        c.store(memoryLocation + 2);
+        c.loadi(4);
+        c.store(memoryLocation + 3);
+        c.loadi(5);
+        c.store(memoryLocation + 4);
+        c.loadi(deviceNumber);
+        c.store(900);
+        c.loadi(platter);
+        c.store(901);
+        c.loadi(platterStart);
+        c.store(902);
+        c.loadi(dataSize);
+        c.store(903);
+        c.loadi(memoryLocation);
+        c.store(904);
+        
+        c.loadi(900);
+        c.syscall(SystemCall.WRITE);
+        c.end();
+         Program f = c.build();
+       
+      //System.out.println("Program 5 "+f);
+        return f;
+}
+    public static Program P4(){
+       int platter =3;
+        int platterStart = 20;
+        int dataSize = 5;
+        int memoryLocation =50 ;
+        int deviceNumber = Machine.DISK1;
+          ProgramBuilder c = new ProgramBuilder();
+        c.size(1000); 
+         c.loadi(1);
+        c.store(memoryLocation);        
+        c.loadi(2);
+        c.store(memoryLocation + 1);
+        c.loadi(3);
+        c.store(memoryLocation + 2);
+        c.loadi(4);
+        c.store(memoryLocation + 3);
+        c.loadi(5);
+        c.store(memoryLocation + 4);
+        
+        c.loadi(deviceNumber);
+        c.store(700);
+        c.loadi(platter);
+        c.store(701);
+        c.loadi(platterStart);
+        c.store(702);
+        c.loadi(dataSize);
+        c.store(703);
+        c.loadi(memoryLocation);
+        c.store(704);
+        
+        c.loadi(700);
+        c.syscall(SystemCall.WRITE);
+         Program f = c.build();
+        // c.end();
+        return f;
+}
+public static Program P3(){
+       int platter =3;
+        int platterStart = 10;
+        int dataSize = 5;
+        int memoryLocation =120 ;
+        int deviceNumber = Machine.DISK1;
+          ProgramBuilder c = new ProgramBuilder();
+        c.size(1000);
+         c.loadi(1);
+        c.store(memoryLocation);        
+        c.loadi(2);
+        c.store(memoryLocation + 1);
+        c.loadi(3);
+        c.store(memoryLocation + 2);
+        c.loadi(4);
+        c.store(memoryLocation + 3);
+        c.loadi(5);
+        c.store(memoryLocation + 4);
+        
+        c.loadi(deviceNumber);
+        c.store(800);
+        c.loadi(platter);
+        c.store(801);
+        c.loadi(platterStart);
+        c.store(802);
+        c.loadi(dataSize);
+        c.store(803);
+        c.loadi(memoryLocation);
+        c.store(804);
+        
+        c.loadi(800);
+        c.syscall(SystemCall.WRITE);
+        c.end();
+         Program f = c.build();
+      //System.out.println("Program 3 "+f);
+        return f;
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
     public static Program P2() {
         int platter =3;
         int platterStart = 31;
         int dataSize = 19;
-        int memoryLocation =600 ;
+        int memoryLocation =450 ;
         int deviceNumber = Machine.DISK1;
         
         ProgramBuilder c = new ProgramBuilder();
@@ -123,15 +282,15 @@ public class Main2 {
         c.loadi(800);
         c.syscall(SystemCall.READ);
         
-        for(int i = 500; i <= 519; i++)
+        for(int i = 500; i < 519; i++)
         
         {
         c.load(i);
         c.syscall(1);
         }
-        
+        c.end();
         Program f = c.build();
-        // System.out.println(f);
+       // System.out.println(f);
         return f;
     }
 
