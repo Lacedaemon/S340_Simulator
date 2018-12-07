@@ -19,5 +19,8 @@ public class IORequest {
         this.requestType = request;
         this.payload = incomingPayload;
     }
-    
+    @Override
+    public String toString() {
+        return "IORequest{" + "prognum=" + prognum + ", requestType=" + requestType + ", payload=" + payload + '}';
+    }
 }

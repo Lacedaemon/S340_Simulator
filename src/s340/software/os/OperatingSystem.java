@@ -450,7 +450,25 @@ public class OperatingSystem implements IInterruptHandler, ISystemCallHandler, I
 
         System.out.println("[Info] END diag() routine");
     }
-
+    
+    public void deviceDiag() {
+        System.out.println("[Debug] BEGIN deviceDiag()");
+        
+        for (int i = 0; i < waitQ.length; i++) {
+            switch(i) {
+                case Machine.KEYBOARD:
+                    System.out.println("[Debug] Machine.KEYBOARD waitQ:");
+                case Machine.CONSOLE:
+                    System.out.println("[Debug] Machine.CONSOLE waitQ:");
+                case Machine.DISK1:
+                    System.out.println("[Debug] Machine.DISK1 waitQ:");
+            }
+            
+            for (int j = 0; j < waitQ[i].size(); j++) {
+                System.out.println(waitQ[i].get(j));
+            }
+        }
+    }
 
     /*
     * Handle a trap from the hardware.
